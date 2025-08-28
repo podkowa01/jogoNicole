@@ -3,18 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caça-Palavras Interativo</title>
+    <title>Jogo da Memória</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Caça-Palavras</h1>
-    <div class="game-container">
-        <div id="word-search-grid"></div>
-        <div class="word-list-container">
-            <h2>Palavras para Encontrar:</h2>
-            <ul id="word-list"></ul>
+    <h1>Jogo da Memória</h1>
+
+    <div class="game-info">
+        <span id="score">Pares encontrados: 0</span>
+        <span id="timer">Tempo: 0s</span>
+    </div>
+
+    <div class="game-board" id="game-board"></div>
+
+    <div class="modal" id="win-modal">
+        <div class="modal-content">
+            <h2>Parabéns!</h2>
+            <p id="final-time"></p>
+            <p>Você encontrou todos os pares!</p>
+            <button onclick="startGame()">Jogar Novamente</button>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
