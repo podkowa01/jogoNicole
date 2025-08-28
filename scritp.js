@@ -32,7 +32,7 @@ function generateGrid(grid) {
     const gridDiv = document.createElement('div');
     gridDiv.classList.add('grid');
 
-    // Adiciona as palavras na grade (horizontal ou vertical)
+    // Adiciona a palavra na grade (horizontal ou vertical)
     placeWordInGrid(grid, selectedWord);
 
     // Preenche as células vazias com letras aleatórias
@@ -45,11 +45,11 @@ function generateGrid(grid) {
     }
 
     // Exibe a grade na tela
-    grid.forEach(row => {
-        row.forEach(cell => {
+    grid.forEach((row, rIndex) => {
+        row.forEach((cell, cIndex) => {
             const cellSpan = document.createElement('span');
             cellSpan.textContent = cell;
-            cellSpan.addEventListener('click', () => selectCell(cellSpan));
+            cellSpan.addEventListener('click', () => selectCell(rIndex, cIndex, cellSpan));
             gridDiv.appendChild(cellSpan);
         });
     });
@@ -65,7 +65,6 @@ function placeWordInGrid(grid, word) {
         const startRow = Math.floor(Math.random() * grid.length);
         const startCol = Math.floor(Math.random() * grid[0].length);
 
-        // Tenta colocar a palavra na grade
         if (canPlaceWord(grid, word, startRow, startCol, direction)) {
             for (let i = 0; i < word.length; i++) {
                 if (direction === 'horizontal') {
@@ -94,21 +93,24 @@ function canPlaceWord(grid, word, row, col, direction) {
     return true;
 }
 
-function selectCell(cellSpan) {
-    if (selectedCells.includes(cellSpan)) {
+function selectCell(row, col, cellSpan) {
+    // Marca a célula como selecionada
+    if (selectedCells.some(cell => cell.row === row && cell.col === col)) {
         cellSpan.classList.remove('selected');
-        selectedCells = selectedCells.filter(cell => cell !== cellSpan);
+        selectedCells = selectedCells.filter(cell => cell.row !== row || cell.col !== col);
     } else {
         cellSpan.classList.add('selected');
-        selectedCells.push(cellSpan);
+        selectedCells.push({ row, col, letter: cellSpan.textContent });
     }
 
     checkWordSelection();
 }
 
 function checkWordSelection() {
-    let selectedWordStr = selectedCells.map(cell => cell.textContent).join('');
-    if (selectedWordStr === selectedWord) {
+    const selectedLetters = selectedCells.map(cell => cell.letter).join('');
+    if (selectedLetters === selectedWord) {
         messageDiv.innerHTML = `Parabéns! Você encontrou a palavra: <b>${selectedWord}</b>`;
+    } else {
+        messageDiv.innerHTML = `Palavra para encontrar: <b>${selectedWord}</b>`;
     }
 }
