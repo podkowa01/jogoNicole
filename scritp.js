@@ -1,116 +1,167 @@
-const words = ['JAVA', 'PYTHON', 'HTML', 'CSS', 'JAVASCRIPT', 'NODE', 'REACT'];
-let grid = [];
-let selectedWord = '';
-let selectedCells = [];
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Referências para os elementos HTML ---
+    const gridContainer = document.getElementById('word-search-grid');
+    const wordListElement = document.getElementById('word-list');
+    
+    // --- Configuração do Jogo ---
+    const words = ['JAVASCRIPT', 'HTML', 'CSS', 'PROGRAMA', 'CODIGO', 'WEB', 'GOOGLE'];
+    const gridSize = 10; // A grade terá 10x10
+    let grid = []; // A matriz que armazena as letras
+    const foundWords = new Set();
+    
+    let isSelecting = false;
+    let selectedCells = [];
 
-const startButton = document.getElementById('start-game');
-const messageDiv = document.getElementById('message');
-const wordSearchDiv = document.getElementById('word-search');
-
-startButton.addEventListener('click', startGame);
-
-function startGame() {
-    grid = createGrid(10, 10);
-    selectedWord = words[Math.floor(Math.random() * words.length)];
-    selectedCells = [];
-    messageDiv.innerHTML = `Palavra para encontrar: <b>${selectedWord}</b>`;
-    generateGrid(grid);
-}
-
-function createGrid(rows, cols) {
-    let grid = [];
-    for (let r = 0; r < rows; r++) {
-        grid.push([]);
-        for (let c = 0; c < cols; c++) {
-            grid[r].push('');
-        }
-    }
-    return grid;
-}
-
-function generateGrid(grid) {
-    const gridDiv = document.createElement('div');
-    gridDiv.classList.add('grid');
-
-    // Adiciona a palavra na grade (horizontal ou vertical)
-    placeWordInGrid(grid, selectedWord);
-
-    // Preenche as células vazias com letras aleatórias
-    for (let r = 0; r < grid.length; r++) {
-        for (let c = 0; c < grid[r].length; c++) {
-            if (grid[r][c] === '') {
-                grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // Letras aleatórias de A-Z
-            }
-        }
+    // --- Funções de Ajuda ---
+    function getRandomLetter() {
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        return alphabet[Math.floor(Math.random() * alphabet.length)];
     }
 
-    // Exibe a grade na tela
-    grid.forEach((row, rIndex) => {
-        row.forEach((cell, cIndex) => {
-            const cellSpan = document.createElement('span');
-            cellSpan.textContent = cell;
-            cellSpan.addEventListener('click', () => selectCell(rIndex, cIndex, cellSpan));
-            gridDiv.appendChild(cellSpan);
-        });
-    });
+    // --- Lógica Principal do Jogo ---
+    function initializeGame() {
+        // Inicializa a grade vazia
+        grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(''));
 
-    wordSearchDiv.innerHTML = '';
-    wordSearchDiv.appendChild(gridDiv);
-}
+        // Coloca as palavras na grade em posições aleatórias
+        words.sort((a, b) => b.length - a.length).forEach(word => placeWord(word));
 
-function placeWordInGrid(grid, word) {
-    let placed = false;
-    while (!placed) {
-        const direction = Math.random() < 0.5 ? 'horizontal' : 'vertical';
-        const startRow = Math.floor(Math.random() * grid.length);
-        const startCol = Math.floor(Math.random() * grid[0].length);
-
-        if (canPlaceWord(grid, word, startRow, startCol, direction)) {
-            for (let i = 0; i < word.length; i++) {
-                if (direction === 'horizontal') {
-                    grid[startRow][startCol + i] = word[i];
-                } else {
-                    grid[startRow + i][startCol] = word[i];
+        // Preenche o resto da grade com letras aleatórias
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                if (grid[row][col] === '') {
+                    grid[row][col] = getRandomLetter();
                 }
             }
-            placed = true;
+        }
+
+        // Renderiza a grade e a lista de palavras no HTML
+        renderGrid();
+        renderWordList();
+    }
+    
+    // Tenta colocar uma palavra na grade
+    function placeWord(word) {
+        const directions = [
+            { dr: 0, dc: 1 }, // Horizontal
+            { dr: 1, dc: 0 }  // Vertical
+        ];
+        
+        let placed = false;
+        let attempts = 0;
+        const maxAttempts = 100;
+
+        while (!placed && attempts < maxAttempts) {
+            attempts++;
+            const direction = directions[Math.floor(Math.random() * directions.length)];
+            const rowStart = Math.floor(Math.random() * gridSize);
+            const colStart = Math.floor(Math.random() * gridSize);
+
+            // Verifica se a palavra cabe e se não colide com outras letras
+            let canFit = true;
+            for (let i = 0; i < word.length; i++) {
+                const newRow = rowStart + i * direction.dr;
+                const newCol = colStart + i * direction.dc;
+
+                if (newRow >= gridSize || newCol >= gridSize || (grid[newRow][newCol] !== '' && grid[newRow][newCol] !== word[i])) {
+                    canFit = false;
+                    break;
+                }
+            }
+
+            if (canFit) {
+                // Coloca a palavra na grade
+                for (let i = 0; i < word.length; i++) {
+                    const newRow = rowStart + i * direction.dr;
+                    const newCol = colStart + i * direction.dc;
+                    grid[newRow][newCol] = word[i];
+                }
+                placed = true;
+            }
         }
     }
-}
 
-function canPlaceWord(grid, word, row, col, direction) {
-    if (direction === 'horizontal') {
-        if (col + word.length > grid[0].length) return false;
-        for (let i = 0; i < word.length; i++) {
-            if (grid[row][col + i] !== '') return false;
+    // Cria os elementos HTML da grade
+    function renderGrid() {
+        gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+        gridContainer.innerHTML = '';
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                const cell = document.createElement('div');
+                cell.classList.add('grid-cell');
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+                cell.textContent = grid[row][col];
+                gridContainer.appendChild(cell);
+            }
         }
-    } else {
-        if (row + word.length > grid.length) return false;
-        for (let i = 0; i < word.length; i++) {
-            if (grid[row + i][col] !== '') return false;
+    }
+
+    // Cria a lista de palavras
+    function renderWordList() {
+        wordListElement.innerHTML = '';
+        words.forEach(word => {
+            const li = document.createElement('li');
+            li.id = `word-${word}`;
+            li.textContent = word;
+            wordListElement.appendChild(li);
+        });
+    }
+
+    // Verifica se a seleção do jogador é uma palavra válida
+    function checkSelection() {
+        if (selectedCells.length === 0) return;
+
+        const selectedWord = selectedCells.map(cell => cell.textContent).join('');
+        const reversedWord = selectedCells.map(cell => cell.textContent).reverse().join('');
+        
+        const found = words.find(word => word === selectedWord || word === reversedWord);
+
+        if (found && !foundWords.has(found)) {
+            foundWords.add(found);
+            selectedCells.forEach(cell => cell.classList.add('found'));
+            
+            const listItem = document.getElementById(`word-${found}`);
+            if (listItem) {
+                listItem.classList.add('found');
+            }
+
+            alert(`Parabéns! Você encontrou a palavra: ${found}`);
+
+            if (foundWords.size === words.length) {
+                setTimeout(() => alert('Você encontrou todas as palavras!'), 500);
+            }
+        } else {
+            selectedCells.forEach(cell => cell.classList.remove('highlight'));
         }
-    }
-    return true;
-}
-
-function selectCell(row, col, cellSpan) {
-    // Marca a célula como selecionada
-    if (selectedCells.some(cell => cell.row === row && cell.col === col)) {
-        cellSpan.classList.remove('selected');
-        selectedCells = selectedCells.filter(cell => cell.row !== row || cell.col !== col);
-    } else {
-        cellSpan.classList.add('selected');
-        selectedCells.push({ row, col, letter: cellSpan.textContent });
+        selectedCells = [];
     }
 
-    checkWordSelection();
-}
+    // --- Eventos do Mouse ---
+    gridContainer.addEventListener('mousedown', (e) => {
+        isSelecting = true;
+        selectedCells = [];
+        const cell = e.target.closest('.grid-cell');
+        if (cell && !cell.classList.contains('found')) {
+            cell.classList.add('highlight');
+            selectedCells.push(cell);
+        }
+    });
 
-function checkWordSelection() {
-    const selectedLetters = selectedCells.map(cell => cell.letter).join('');
-    if (selectedLetters === selectedWord) {
-        messageDiv.innerHTML = `Parabéns! Você encontrou a palavra: <b>${selectedWord}</b>`;
-    } else {
-        messageDiv.innerHTML = `Palavra para encontrar: <b>${selectedWord}</b>`;
-    }
-}
+    gridContainer.addEventListener('mousemove', (e) => {
+        if (!isSelecting) return;
+        const cell = e.target.closest('.grid-cell');
+        if (cell && !selectedCells.includes(cell) && !cell.classList.contains('found')) {
+            cell.classList.add('highlight');
+            selectedCells.push(cell);
+        }
+    });
+
+    gridContainer.addEventListener('mouseup', () => {
+        isSelecting = false;
+        checkSelection();
+    });
+
+    // Inicia o jogo
+    initializeGame();
+});
